@@ -12,7 +12,7 @@ CUSTOM_UCR_EXPRESSIONS = [
     ('icds_open_in_month', 'custom.icds_reports.ucr.expressions.open_in_month'),
     ('icds_get_case_forms_by_date', 'custom.icds_reports.ucr.expressions.get_case_forms_by_date'),
     ('icds_get_all_forms_repeats', 'custom.icds_reports.ucr.expressions.get_all_forms_repeats'),
-    ('icds_get_last_form_repeats', 'custom.icds_reports.ucr.expressions.get_last_form_repeats'),
+    ('icds_get_last_form_repeat', 'custom.icds_reports.ucr.expressions.get_last_form_repeat'),
     ('icds_alive_in_month', 'custom.icds_reports.ucr.expressions.alive_in_month'),
     ('icds_ccs_pregnant', 'custom.icds_reports.ucr.expressions.ccs_pregnant'),
     ('icds_ccs_lactating', 'custom.icds_reports.ucr.expressions.ccs_lactating'),
@@ -55,17 +55,17 @@ class GetAllFormsRepeatsSpec(JsonObject):
     type = TypeProperty('icds_get_all_forms_repeats')
     forms_expression = DefaultProperty(required=True)
     repeat_path = ListProperty(required=True)
-    repeat_filter = DefaultProperty(required=False),
     case_id_path = ListProperty(required=True)
+    repeat_filter = DefaultProperty(required=False)
     case_id_expression = DefaultProperty(required=False)
 
 
-class GetLastFormRepeatsSpec(JsonObject):
-    type = TypeProperty('icds_get_last_form_repeats')
+class GetLastFormRepeatSpec(JsonObject):
+    type = TypeProperty('icds_get_last_form_repeat')
     forms_expression = DefaultProperty(required=True)
     repeat_path = ListProperty(required=True)
-    repeat_filter = DefaultProperty(required=False)
     case_id_path = ListProperty(required=True)
+    repeat_filter = DefaultProperty(required=False)
     case_id_expression = DefaultProperty(required=False)
 
 
@@ -256,7 +256,6 @@ def open_in_month(spec, context):
                         },
                         'to_date_expression': {
                             'type': 'icds_month_end',
-                            'offset': 3
                         }
                     },
                     'property_value': 0
@@ -284,7 +283,6 @@ def open_in_month(spec, context):
                                 'type': 'diff_days',
                                 'from_date_expression': {
                                     'type': 'icds_month_start',
-                                    'offset': 3
                                 },
                                 'to_date_expression': {
                                     'expression': {
@@ -487,40 +485,60 @@ def get_all_forms_repeats(spec, context):
     return ExpressionFactory.from_spec(spec, context)
 
 
-def get_last_form_repeats(spec, context):
-    GetLastFormRepeatsSpec.wrap(spec)
-    if spec['repeat_filter'] is not None:
-        spec = {
-            'type': 'filter_items',
-            'filter_expression': spec['repeat_filter'],
-            'items_expression': {
-                'type': 'nested',
-                'argument_expression': {
-                    'type': 'reduce_items',
-                    'aggregation_fn': 'last_item',
-                    'items_expression': spec['forms_expression']
-                },
-                'value_expression': {
-                    'type': 'property_path',
-                    'datatype': 'array',
-                    'property_path': spec['repeat_path'],
-                }
+def get_last_form_repeat(spec, context):
+    GetLastFormRepeatSpec.wrap(spec)
+
+    if spec['case_id_expression'] is None:
+        case_id_expression = {
+            "type": "root_doc",
+            "expression": {
+                "type": "property_name",
+                "property_name": "_id"
             }
         }
     else:
-        spec = {
-            'type': 'nested',
-            'argument_expression': {
-                'type': 'reduce_items',
-                'aggregation_fn': 'last_item',
-                'items_expression': spec['forms_expression']
-            },
-            'value_expression': {
+        case_id_expression = spec['case_id_expression']
+
+    repeat_filters = []
+    repeat_filters.append(
+        {
+            'type': 'boolean_expression',
+            'operator': 'eq',
+            'expression': {
                 'type': 'property_path',
-                'datatype': 'array',
-                'property_path': spec['repeat_path'],
+                'property_path': spec['case_id_path']
+            },
+            'property_value': case_id_expression
+        }
+    )
+
+    if spec['repeat_filter'] is not None:
+        repeat_filters.append(spec['repeat_filter'])
+
+    spec = {
+        'type': 'reduce_items',
+        'aggregation_fn': 'last_item',
+        'items_expression': {
+            'type': 'filter_items',
+            'filter_expression': {
+                'type': 'and',
+                'filters': repeat_filters
+            },
+            'items_expression': {
+                'type': 'map_items',
+                'map_expression': {
+                    'type': 'property_path',
+                    'datatype': 'array',
+                    'property_path': spec['repeat_path']
+                },
+                'items_expression': {
+                    'type': 'reduce_items',
+                    'aggregation_fn': 'last_item',
+                    'items_expression': spec['forms_expression']
+                }
             }
         }
+    }
     return ExpressionFactory.from_spec(spec, context)
 
 
@@ -786,7 +804,7 @@ def child_age_in_months(spec, context):
     ChildAgeInMonthsSpec.wrap(spec)
     spec = {
         'type': 'evaluator',
-        'statement': 'age_in_days / 30.4',
+        'statement': 'int(age_in_days / 30.4)',
         'context_variables': {
             'age_in_days': {
                 'type': 'icds_child_age_in_days'

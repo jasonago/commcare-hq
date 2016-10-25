@@ -107,7 +107,6 @@ SERVER_ENVIRONMENT = 'changeme' #Modify this value if you are deploying multiple
 ####### Log/debug setup ########
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 # log directories must exist and be writeable!
 DJANGO_LOG_FILE = "/tmp/commcare-hq.django.log"

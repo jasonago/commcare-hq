@@ -22,26 +22,6 @@ CUSTOM_UCR_EXPRESSIONS = [
 ]
 
 
-class MonthStartSpec(JsonObject):
-    type = TypeProperty('icds_month_start')
-
-
-class MonthEndSpec(JsonObject):
-    type = TypeProperty('icds_month_end')
-
-
-class ParentIdSpec(JsonObject):
-    type = TypeProperty('icds_parent_id')
-
-
-class ParentParentIdSpec(JsonObject):
-    type = TypeProperty('icds_parent_parent_id')
-
-
-class OpenInMonthSpec(JsonObject):
-    type = TypeProperty('icds_open_in_month')
-
-
 class GetCaseFormsByDateSpec(JsonObject):
     type = TypeProperty('icds_get_case_forms_by_date')
     case_id_expression = DefaultProperty(required=False)
@@ -69,33 +49,8 @@ class GetLastFormRepeatSpec(JsonObject):
     case_id_expression = DefaultProperty(required=False)
 
 
-class AliveInMonthSpec(JsonObject):
-    type = TypeProperty('icds_alive_in_month')
-
-
-class CCSPregnantSpec(JsonObject):
-    type = TypeProperty('icds_ccs_pregnant')
-
-
-class CCSLactatingSpec(JsonObject):
-    type = TypeProperty('icds_ccs_lactating')
-
-
-class ChildAgeInDaysSpec(JsonObject):
-    type = TypeProperty('icds_child_age_in_days')
-
-
-class ChildAgeInMonthsSpec(JsonObject):
-    type = TypeProperty('icds_child_age_in_months')
-
-
-class ChildValidInMonthSpec(JsonObject):
-    type = TypeProperty('icds_child_valid_in_month')
-
-
 def month_start(spec, context):
     # fix offset to 3 months in past
-    MonthStartSpec.wrap(spec)
     spec = {
         'type': 'month_start_date',
         'date_expression': {
@@ -123,7 +78,6 @@ def month_start(spec, context):
 
 def month_end(spec, context):
     # fix offset to 3 months in past
-    MonthEndSpec.wrap(spec)
     spec = {
         'type': 'month_end_date',
         'date_expression': {
@@ -150,7 +104,6 @@ def month_end(spec, context):
 
 
 def parent_id(spec, context):
-    ParentIdSpec.wrap(spec)
     spec = {
         'type': 'nested',
         'argument_expression': {
@@ -189,7 +142,6 @@ def parent_id(spec, context):
 
 
 def parent_parent_id(spec, context):
-    ParentParentIdSpec.wrap(spec)
     spec = {
         'type': 'related_doc',
         'related_doc_type': 'CommCareCase',
@@ -235,7 +187,6 @@ def parent_parent_id(spec, context):
 
 
 def open_in_month(spec, context):
-    OpenInMonthSpec.wrap(spec)
     spec = {
         'type': 'conditional',
         'test': {
@@ -543,7 +494,6 @@ def get_last_form_repeat(spec, context):
 
 
 def alive_in_month(spec, context):
-    AliveInMonthSpec.wrap(spec)
     spec = {
         'type': 'conditional',
         'test': {
@@ -607,7 +557,6 @@ def alive_in_month(spec, context):
 
 
 def ccs_pregnant(spec, context):
-    CCSPregnantSpec.wrap(spec)
     spec = {
         'type': 'conditional',
         'test': {
@@ -684,7 +633,6 @@ def ccs_pregnant(spec, context):
 
 
 def ccs_lactating(spec, context):
-    CCSLactatingSpec.wrap(spec)
     spec = {
         'type': 'conditional',
         'test': {
@@ -778,7 +726,6 @@ def ccs_lactating(spec, context):
 
 
 def child_age_in_days(spec, context):
-    ChildAgeInDaysSpec.wrap(spec)
     spec = {
         'type': 'diff_days',
         'from_date_expression': {
@@ -801,7 +748,6 @@ def child_age_in_days(spec, context):
 
 
 def child_age_in_months(spec, context):
-    ChildAgeInMonthsSpec.wrap(spec)
     spec = {
         'type': 'evaluator',
         'statement': 'int(age_in_days / 30.4)',
@@ -815,7 +761,6 @@ def child_age_in_months(spec, context):
 
 
 def child_valid_in_month(spec, context):
-    ChildValidInMonthSpec.wrap(spec)
     spec = {
         "type": "and",
         "filters": [
@@ -835,7 +780,7 @@ def child_valid_in_month(spec, context):
                     },
                     "property_value": [
                         "",
-                        null
+                        None
                     ]
                 }
             },
